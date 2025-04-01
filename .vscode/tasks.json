@@ -2,11 +2,11 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "Build ToyDB",
+            "label": "Build Program",
             "command": "bash",
             "args": [
                 "-c",
-                "/usr/bin/clang++ -fcolor-diagnostics -fansi-escape-codes -g $(find ${workspaceFolder}/src -name '*.cpp') -o ${workspaceFolder}/ToyDB"
+                "mkdir -p ${workspaceFolder}/output && /usr/bin/clang++ -fcolor-diagnostics -fansi-escape-codes -g $(find ${workspaceFolder}/src -name '*.cpp') -o ${workspaceFolder}/output/main"
             ],
             "options": {
                 "cwd": "${workspaceFolder}" // Set the working directory to the workspace folder
