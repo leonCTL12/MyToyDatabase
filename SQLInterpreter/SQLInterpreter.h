@@ -1,7 +1,7 @@
 #pragma once
 
-using namespace std;
 #include <string>
+using namespace std;
 
 class SQLInterpreter
 {

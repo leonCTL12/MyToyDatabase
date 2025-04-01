@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include "SQLInterpreter.h"
+#include "SQLInterpreter/SQLInterpreter.h"
 
 using namespace std;
 
