@@ -2,6 +2,6 @@
 
 int main()
 {
-    std::cout << "Hello, World from CMake!" << std::endl;
+    std::cout << "Hello, World CPP!" << std::endl;
     return 0;
 }
