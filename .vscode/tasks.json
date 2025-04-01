@@ -3,15 +3,10 @@
         {
             "type": "cppbuild",
             "label": "Build ToyDB",
-            "command": "/usr/bin/clang++",
+            "command": "bash",
             "args": [
-                "-fcolor-diagnostics",
-                "-fansi-escape-codes",
-                "-g",
-                "main.cpp", // Include the main file
-                "SQLInterpreter/SQLInterpreter.cpp", // Include the additional file
-                "-o",
-                "${workspaceFolder}/ToyDB" // Output executable in the workspace folder
+                "-c",
+                "/usr/bin/clang++ -fcolor-diagnostics -fansi-escape-codes -g $(find ${workspaceFolder}/src -name '*.cpp') -o ${workspaceFolder}/ToyDB"
             ],
             "options": {
                 "cwd": "${workspaceFolder}" // Set the working directory to the workspace folder
