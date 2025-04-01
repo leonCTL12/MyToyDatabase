@@ -1,11 +1,13 @@
 #include <iostream>
 #include <string>
+#include "SQLInterpreter.h"
 
 using namespace std;
 
 int main()
 {
     string userInput;
+    SQLInterpreter interpreter;
 
     while (true)
     {
@@ -19,7 +21,7 @@ int main()
             break;
         }
 
-        cout << userInput << endl;
+        interpreter.Interpret(userInput);
     }
 
     return 0;
