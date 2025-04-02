@@ -1,10 +1,13 @@
 #pragma once
 
+#include <sstream>
 #include <string>
-using namespace std;
 
 class SQLInterpreter
 {
 public:
-    void Interpret(string command);
+    void Interpret(std::string command);
+
+private:
+    void InterpretCreateCommand(std::istringstream &command);
 };

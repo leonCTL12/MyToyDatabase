@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string>
 #include "SQLInterpreter/SQLInterpreter.h"
-#include "DatabaseInternal/test.h"
 
 using namespace std;
 
@@ -9,9 +8,6 @@ int main()
 {
     string userInput;
     SQLInterpreter interpreter;
-    Test test;
-
-    test.testFunction(); // Call the test function
 
     while (true)
     {
