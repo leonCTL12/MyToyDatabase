@@ -1,8 +1,8 @@
 #include <iostream>
 #include <string>
-#include "SQLInterpreter/SQLInterpreter.h"
+#include "sql_interpreter/sql_interpreter.h"
 #include <boost/di.hpp>
-#include "DatabaseInternal/DatabaseCommandHandler.h"
+#include "database_internal/database_command_handler.h"
 
 using namespace std;
 
@@ -24,7 +24,7 @@ int main()
             break;
         }
 
-        interpreter.Interpret(userInput);
+        interpreter.interpret(userInput);
     }
 
     return 0;

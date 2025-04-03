@@ -1,16 +1,16 @@
-#include "SQLInterpreter.h"
+#include "sql_interpreter.h"
 #include <iostream>
-#include "SQLConstants.h"
-#include "../DatabaseInternal/DatabaseCommandHandler.h"
+#include "sql_constants.h"
+#include "../database_internal/database_command_handler.h"
 
-void SQLInterpreter::Interpret(std::string input) const
+void SQLInterpreter::interpret(std::string input) const
 {
     std::istringstream stringsStream(input);
     std::string command;
     stringsStream >> command;
     if (command == SQLConstants::Action::CREATE)
     {
-        InterpretCreateCommand(stringsStream);
+        interpretCreateCommand(stringsStream);
     }
     else
     {
@@ -18,7 +18,7 @@ void SQLInterpreter::Interpret(std::string input) const
     }
 }
 
-void SQLInterpreter::InterpretCreateCommand(std::istringstream &stringStream) const
+void SQLInterpreter::interpretCreateCommand(std::istringstream &stringStream) const
 {
     std::string objectType;
     stringStream >> objectType;
@@ -28,11 +28,11 @@ void SQLInterpreter::InterpretCreateCommand(std::istringstream &stringStream) co
 
     if (objectType == SQLConstants::ObjectType::DATABASE)
     {
-        databaseCommandHandler_.CreateNewDatabase(name);
+        databaseCommandHandler_.createNewDatabase(name);
     }
     else if (objectType == SQLConstants::ObjectType::TABLE)
     {
-        databaseCommandHandler_.CreateNewTable(name);
+        databaseCommandHandler_.createNewTable(name);
     }
     else
     {
