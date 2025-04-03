@@ -5,13 +5,14 @@
 #include "app.h"
 #include "database_internal/database_command_handler.h"
 
-using namespace std;
+namespace di = boost::di;
 
 int main()
 {
-    DatabaseCommandHandler databaseCommandHandler;
-    SQLInterpreter interpreter(databaseCommandHandler);
-    App app(interpreter);
+    auto injection = boost::di::make_injector(
+        di::bind<DatabaseCommandHandler>().to<DatabaseCommandHandler>().in(di::singleton),
+        di::bind<SQLInterpreter>().to<SQLInterpreter>().in(di::singleton), );
+    auto app = injection.create<App>();
     app.run();
     return 0;
 }
