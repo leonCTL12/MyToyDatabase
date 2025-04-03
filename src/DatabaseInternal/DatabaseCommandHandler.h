@@ -4,6 +4,6 @@
 class DatabaseCommandHandler
 {
 public:
-    void CreateNewDatabase(std::string_view name);
-    void CreateNewTable(std::string_view name);
+    void CreateNewDatabase(std::string_view name) const;
+    void CreateNewTable(std::string_view name) const;
 };

@@ -1,13 +1,16 @@
 #include <iostream>
 #include <string>
 #include "SQLInterpreter/SQLInterpreter.h"
+#include <boost/di.hpp>
+#include "DatabaseInternal/DatabaseCommandHandler.h"
 
 using namespace std;
 
 int main()
 {
     string userInput;
-    SQLInterpreter interpreter;
+    DatabaseCommandHandler databaseCommandHandler;
+    SQLInterpreter interpreter(databaseCommandHandler);
 
     while (true)
     {
