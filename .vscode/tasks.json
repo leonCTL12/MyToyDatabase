@@ -1,15 +1,32 @@
 {
+    "version": "2.0.0",
     "tasks": [
         {
-            "type": "cppbuild",
-            "label": "Build Program",
+            "type": "shell",
+            "label": "CMake Configure",
             "command": "bash",
             "args": [
                 "-c",
-                "mkdir -p ${workspaceFolder}/output && /usr/bin/clang++ -std=c++17 -fcolor-diagnostics -fansi-escape-codes -g -I${workspaceFolder}/include $(find ${workspaceFolder}/src -name '*.cpp') -o ${workspaceFolder}/output/main"
+                "mkdir -p ${workspaceFolder}/build && cmake -S ${workspaceFolder} -B ${workspaceFolder}/build -DCMAKE_BUILD_TYPE=Debug"
             ],
             "options": {
-                "cwd": "${workspaceFolder}" // Set the working directory to the workspace folder
+                "cwd": "${workspaceFolder}"  // Changed from "${workspaceFolder}/build"
+            },
+            "problemMatcher": [],
+            "detail": "Ensure build directory exists and configure CMake project"
+        },
+        {
+            "type": "shell",
+            "label": "CMake Build",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "${workspaceFolder}/build",
+                "--config",
+                "Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
             },
             "problemMatcher": [
                 "$gcc"
@@ -18,8 +35,43 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "detail": "Task modified to support multi-file debugging."
+            "dependsOn": "CMake Configure",
+            "detail": "Build the project using CMake"
+        },
+        {
+            "type": "shell",
+            "label": "CMake Clean",
+            "command": "rm",
+            "args": [
+                "-rf",
+                "${workspaceFolder}/build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "detail": "Clean the build directory"
+        },
+        {
+            "type": "shell",
+            "label": "CMake Build with Clean",
+            "command": "echo",
+            "args": [
+                "Building with clean..."
+            ],
+            "dependsOn": [
+                "CMake Clean",
+                "CMake Configure",
+                "CMake Build"
+            ],
+            "dependsOrder": "sequence",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build"
+            },
+            "detail": "Clean, configure, and build the project"
         }
-    ],
-    "version": "2.0.0"
+    ]
 }
