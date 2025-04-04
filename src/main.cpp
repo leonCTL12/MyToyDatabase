@@ -11,7 +11,8 @@ int main()
 {
     auto injection = boost::di::make_injector(
         di::bind<DatabaseCommandHandler>().to<DatabaseCommandHandler>().in(di::singleton),
-        di::bind<SQLInterpreter>().to<SQLInterpreter>().in(di::singleton));
+        di::bind<SQLInterpreter>().to<SQLInterpreter>().in(di::singleton),
+        di::bind<PathProvider>().to<PathProvider>().in(di::singleton));
     auto app = injection.create<App>();
     app.run();
     return 0;
