@@ -7,6 +7,7 @@ namespace SQLConstants
     namespace Action
     {
         constexpr std::string_view CREATE = "CREATE";
+        constexpr std::string_view DROP = "DROP";
     }
 
     namespace ObjectType

@@ -20,3 +20,22 @@ void DatabaseCommandHandler::createNewTable(std::string_view name) const
 {
     std::cout << "Creating new table: " << name << std::endl;
 }
+
+void DatabaseCommandHandler::dropDatabase(std::string_view name) const
+{
+    std::cout << "Deleting database: " << name << std::endl;
+    fs::path dbPath = pathProvider.getDBFolderPath(name);
+    if (persistentStorage.tryDeleteFolder(dbPath))
+    {
+        std::cout << "Database folder deleted successfully." << std::endl;
+    }
+    else
+    {
+        std::cout << "Failed to delete database folder or it does not exist." << std::endl;
+    }
+}
+
+void DatabaseCommandHandler::dropTable(std::string_view name) const
+{
+    std::cout << "Deleting table: " << name << std::endl;
+}

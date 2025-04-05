@@ -8,4 +8,5 @@ public:
     bool fileExists(const fs::path &path) const;
     bool tryCreateFolder(const fs::path &path) const;
     bool tryCreateFile(const fs::path &path) const;
+    bool tryDeleteFolder(const fs::path &path) const;
 };

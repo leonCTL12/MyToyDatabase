@@ -12,5 +12,6 @@ public:
 
 private:
     void interpretCreateCommand(std::istringstream &command) const;
+    void interpretDropCommand(std::istringstream &command) const;
     const DatabaseCommandHandler &databaseCommandHandler_;
 };

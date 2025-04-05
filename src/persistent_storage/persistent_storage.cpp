@@ -52,3 +52,22 @@ bool PersistentStorage::tryCreateFile(const fs::path &path) const
         return false;
     }
 }
+
+bool PersistentStorage::tryDeleteFolder(const fs::path &path) const
+{
+    if (!fs::exists(path))
+    {
+        return false; // Directory does not exist
+    }
+    try
+    {
+        // fs::remove_all(path) returns the number of files removed
+        // If it returns 0, it means the directory was not removed
+        return fs::remove_all(path) > 0;
+    }
+    catch (const fs::filesystem_error &e)
+    {
+        std::cout << "Error deleting directory: " << e.what() << std::endl;
+        return false;
+    }
+}
