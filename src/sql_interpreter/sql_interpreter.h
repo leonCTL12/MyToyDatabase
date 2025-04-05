@@ -3,8 +3,9 @@
 #include <sstream>
 #include <string>
 #include "../database_command_handler/database_command_handler.h"
+#include "i_sql_interpreter.h"
 
-class SQLInterpreter
+class SQLInterpreter : public ISQLInterpreter
 {
 public:
     explicit SQLInterpreter(const DatabaseCommandHandler &databaseCommandHandler) : databaseCommandHandler_(databaseCommandHandler) {}
