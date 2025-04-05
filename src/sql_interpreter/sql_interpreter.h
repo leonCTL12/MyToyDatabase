@@ -9,7 +9,7 @@ class SQLInterpreter : public ISQLInterpreter
 {
 public:
     explicit SQLInterpreter(const DatabaseCommandHandler &databaseCommandHandler) : databaseCommandHandler_(databaseCommandHandler) {}
-    void interpret(std::string command) const;
+    void interpret(std::string command) const override;
 
 private:
     void interpretCreateCommand(std::istringstream &command) const;
