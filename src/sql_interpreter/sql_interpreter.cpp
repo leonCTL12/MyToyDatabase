@@ -1,7 +1,7 @@
 #include "sql_interpreter.h"
 #include <iostream>
 #include "sql_constants.h"
-#include "../database_internal/database_command_handler.h"
+#include "../database_command_handler/database_command_handler.h"
 
 void SQLInterpreter::interpret(std::string input) const
 {

@@ -2,7 +2,7 @@
 
 #include <sstream>
 #include <string>
-#include "../database_internal/database_command_handler.h"
+#include "../database_command_handler/database_command_handler.h"
 
 class SQLInterpreter
 {

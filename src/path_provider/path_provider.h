@@ -8,6 +8,10 @@ class PathProvider
 {
 
 public:
+    explicit PathProvider();
     fs::path getAppRootPath() const;
     fs::path getDBFolderPath(std::string_view dbName) const;
+
+private:
+    fs::path homeDirectory;
 };
