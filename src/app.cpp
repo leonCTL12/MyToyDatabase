@@ -1,4 +1,5 @@
 #include "app.h"
+#include "input_constants.h"
 #include <iostream>
 
 void App::run() const
@@ -11,12 +12,12 @@ void App::run() const
         std::cout << ">>> ";
         std::getline(std::cin, userInput);
 
-        if (userInput == "EXIT")
+        if (userInput == InputConstants::Action::EXIT)
         {
             std::cout << "Bye!\n";
             break;
         }
 
-        sqlInterpreter_.interpret(userInput);
+        inputInterpreter_.interpret(userInput);
     }
 }

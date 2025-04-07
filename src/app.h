@@ -4,9 +4,9 @@
 class App
 {
 public:
-    explicit App(const ISQLInterpreter &sqlInterpreter) : sqlInterpreter_(sqlInterpreter) {}
+    explicit App(const InputInterpreter &inputInterpreter) : inputInterpreter_(inputInterpreter) {}
     void run() const;
 
 private:
-    const ISQLInterpreter &sqlInterpreter_;
+    const InputInterpreter &inputInterpreter_;
 };

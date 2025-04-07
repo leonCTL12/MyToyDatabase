@@ -3,16 +3,17 @@
 #include <sstream>
 #include <string>
 #include "../database_command_handler/database_command_handler.h"
-#include "i_input_interpreter.h"
 
-class SQLInterpreter : public ISQLInterpreter
+class InputInterpreter
 {
 public:
-    explicit SQLInterpreter(const DatabaseCommandHandler &databaseCommandHandler) : databaseCommandHandler_(databaseCommandHandler) {}
-    void interpret(std::string command) const override;
+    explicit InputInterpreter(const DatabaseCommandHandler &databaseCommandHandler) : databaseCommandHandler_(databaseCommandHandler) {}
+    void interpret(std::string command) const;
+
+    void interpretGetCommand(std::istringstream &stringsStream) const;
 
 private:
-    void interpretCreateCommand(std::istringstream &command) const;
-    void interpretDropCommand(std::istringstream &command) const;
+    void handlePutCommand(std::istringstream &command) const;
+    void interpretDeleteCommand(std::istringstream &command) const;
     const DatabaseCommandHandler &databaseCommandHandler_;
 };
