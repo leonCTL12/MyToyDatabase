@@ -3,7 +3,7 @@
 #include <sstream>
 #include <string>
 #include "../database_command_handler/database_command_handler.h"
-#include "i_sql_interpreter.h"
+#include "i_input_interpreter.h"
 
 class SQLInterpreter : public ISQLInterpreter
 {

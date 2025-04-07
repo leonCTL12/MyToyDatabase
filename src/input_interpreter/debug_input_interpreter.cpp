@@ -1,9 +1,9 @@
-#include "debug_sql_interpreter.h"
+#include "debug_input_interpreter.h"
 #include <iostream>
 
-void DebugSQLInterpreter::interpret(std::string command) const
+void DebugInputInterpreter::interpret(std::string command) const
 {
-    std::cout << "DebugSQLInterpreter: Interpreting command: " << command << std::endl;
+    std::cout << "DebugInputInterpreter: Interpreting command: " << command << std::endl;
 
     if (command == "RESET")
     {

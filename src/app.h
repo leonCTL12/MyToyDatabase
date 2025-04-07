@@ -1,5 +1,5 @@
 #pragma once
-#include "sql_interpreter/sql_interpreter.h"
+#include "input_interpreter/input_interpreter.h"
 
 class App
 {

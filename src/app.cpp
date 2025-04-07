@@ -7,11 +7,11 @@ void App::run() const
 
     while (true)
     {
-        std::cout << "Enter a command or 'quit' to exit: " << std::endl;
+        std::cout << "Enter a command or 'EXIT' to exit: " << std::endl;
         std::cout << ">>> ";
         std::getline(std::cin, userInput);
 
-        if (userInput == "quit")
+        if (userInput == "EXIT")
         {
             std::cout << "Bye!\n";
             break;

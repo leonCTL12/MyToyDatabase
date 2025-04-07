@@ -2,7 +2,7 @@
 
 #include <string_view>
 
-namespace SQLConstants
+namespace InputConstants
 {
     namespace Action
     {

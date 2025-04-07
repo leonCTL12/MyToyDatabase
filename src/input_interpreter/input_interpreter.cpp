@@ -1,6 +1,6 @@
-#include "sql_interpreter.h"
+#include "input_interpreter.h"
 #include <iostream>
-#include "sql_constants.h"
+#include "input_constants.h"
 #include "../database_command_handler/database_command_handler.h"
 
 void SQLInterpreter::interpret(std::string input) const
@@ -8,11 +8,11 @@ void SQLInterpreter::interpret(std::string input) const
     std::istringstream stringsStream(input);
     std::string command;
     stringsStream >> command;
-    if (command == SQLConstants::Action::CREATE)
+    if (command == InputConstants::Action::CREATE)
     {
         interpretCreateCommand(stringsStream);
     }
-    else if (command == SQLConstants::Action::DROP)
+    else if (command == InputConstants::Action::DROP)
     {
         interpretDropCommand(stringsStream);
     }
@@ -30,11 +30,11 @@ void SQLInterpreter::interpretCreateCommand(std::istringstream &stringStream) co
     std::string name;
     stringStream >> name;
 
-    if (objectType == SQLConstants::ObjectType::DATABASE)
+    if (objectType == InputConstants::ObjectType::DATABASE)
     {
         databaseCommandHandler_.createNewDatabase(name);
     }
-    else if (objectType == SQLConstants::ObjectType::TABLE)
+    else if (objectType == InputConstants::ObjectType::TABLE)
     {
         databaseCommandHandler_.createNewTable(name);
     }
@@ -52,11 +52,11 @@ void SQLInterpreter::interpretDropCommand(std::istringstream &stringStream) cons
     std::string name;
     stringStream >> name;
 
-    if (objectType == SQLConstants::ObjectType::DATABASE)
+    if (objectType == InputConstants::ObjectType::DATABASE)
     {
         databaseCommandHandler_.dropDatabase(name);
     }
-    else if (objectType == SQLConstants::ObjectType::TABLE)
+    else if (objectType == InputConstants::ObjectType::TABLE)
     {
         databaseCommandHandler_.dropTable(name);
     }
