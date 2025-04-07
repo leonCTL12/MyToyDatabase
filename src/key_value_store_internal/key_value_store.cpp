@@ -8,12 +8,24 @@ void KeyValueStore::put(const std::string_view key, const std::string_view value
     unorderedMap[std::string(key)] = std::string(value);
 }
 
-std::optional<std::string_view> KeyValueStore::get(const std::string_view key) const
+std::optional<std::string> KeyValueStore::get(const std::string_view key) const
 {
     auto it = unorderedMap.find(std::string(key));
     if (it != unorderedMap.end())
     {
-        return std::string_view(it->second);
+        return it->second;
     }
     return std::nullopt;
+}
+
+bool KeyValueStore::deleteKey(const std::string_view key)
+{
+    auto it = unorderedMap.find(std::string(key));
+    if (it == unorderedMap.end())
+    {
+        return false;
+    }
+
+    unorderedMap.erase(it);
+    return true;
 }

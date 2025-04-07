@@ -51,7 +51,7 @@ void InputInterpreter::interpretPutCommand(std::istringstream &stringStream) con
     stringStream >> value;
 
     keyValueStore_.put(key, value);
-    std::cout << "Successfully added key-value pair: " << key << " : " << value << std::endl;
+    std::cout << "Success" << std::endl;
 }
 
 void InputInterpreter::interpretDeleteCommand(std::istringstream &stringStream) const
@@ -59,6 +59,12 @@ void InputInterpreter::interpretDeleteCommand(std::istringstream &stringStream) 
     std::string key;
     stringStream >> key;
 
-    std::cout << "Handling DELETE command" << std::endl;
-    std::cout << "Key: " << key << std::endl;
+    if (keyValueStore_.deleteKey(key))
+    {
+        std::cout << "Success" << std::endl;
+    }
+    else
+    {
+        std::cout << "Fail" << std::endl;
+    }
 }
