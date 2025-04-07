@@ -9,7 +9,7 @@ void InputInterpreter::interpret(std::string input) const
     stringsStream >> command;
     if (command == InputConstants::Action::PUT)
     {
-        handlePutCommand(stringsStream);
+        interpretPutCommand(stringsStream);
     }
     else if (command == InputConstants::Action::DELETE)
     {
@@ -29,11 +29,20 @@ void InputInterpreter::interpretGetCommand(std::istringstream &stringsStream) co
 {
     std::string key;
     stringsStream >> key;
-    std::cout << "Handling GET command" << std::endl;
-    std::cout << "Key: " << key << std::endl;
+
+    auto value = keyValueStore_.get(key);
+
+    if (value)
+    {
+        std::cout << *value << std::endl;
+    }
+    else
+    {
+        std
+    }
 }
 
-void InputInterpreter::handlePutCommand(std::istringstream &stringStream) const
+void InputInterpreter::interpretPutCommand(std::istringstream &stringStream) const
 {
     std::string key;
     stringStream >> key;
@@ -41,8 +50,8 @@ void InputInterpreter::handlePutCommand(std::istringstream &stringStream) const
     std::string value;
     stringStream >> value;
 
-    std::cout << "Handling PUT command" << std::endl;
-    std::cout << "Key: " << key << ", Value: " << value << std::endl;
+    keyValueStore_.put(key, value);
+    std::cout << "Successfully added key-value pair: " << key << " : " << value << std::endl;
 }
 
 void InputInterpreter::interpretDeleteCommand(std::istringstream &stringStream) const
