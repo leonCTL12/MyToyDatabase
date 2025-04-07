@@ -1,7 +1,6 @@
 #include "input_interpreter.h"
 #include <iostream>
 #include "../input_constants.h"
-#include "../database_command_handler/database_command_handler.h"
 
 void InputInterpreter::interpret(std::string input) const
 {
