@@ -38,7 +38,7 @@ void InputInterpreter::interpretGetCommand(std::istringstream &stringsStream) co
     }
     else
     {
-        std
+        std::cout << "Key not found. Key: " << key << std::endl;
     }
 }
 
