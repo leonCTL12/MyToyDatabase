@@ -33,3 +33,19 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     target_compile_options(main PRIVATE -fdiagnostics-color=always)
 endif()
+
+# Option to build tests (enabled by default)
+option(BUILD_TESTS "Build the unit tests" ON)
+
+
+if(BUILD_TESTS)
+    # Add Google Test from the external/googletest directory
+    add_subdirectory(external/googletest)
+    
+    # Enable CTest for test management
+    enable_testing()
+    
+    # Include the tests subdirectory
+    # Tell CMake to look for another CMakeLists.txt file in the tests directory
+    add_subdirectory(tests) 
+endif()

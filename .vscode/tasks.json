@@ -10,7 +10,7 @@
                 "mkdir -p ${workspaceFolder}/build && cmake -S ${workspaceFolder} -B ${workspaceFolder}/build -DCMAKE_BUILD_TYPE=Debug"
             ],
             "options": {
-                "cwd": "${workspaceFolder}"  // Changed from "${workspaceFolder}/build"
+                "cwd": "${workspaceFolder}" // Changed from "${workspaceFolder}/build"
             },
             "problemMatcher": [],
             "detail": "Ensure build directory exists and configure CMake project"
@@ -72,6 +72,30 @@
                 "kind": "build"
             },
             "detail": "Clean, configure, and build the project"
+        },
+        {
+            "type": "shell",
+            "label": "CMake Build and Run Tests",
+            "command": "ctest",
+            "args": [
+                "--test-dir",
+                "${workspaceFolder}/build",
+                "--output-on-failure"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "dependsOn": [
+                "CMake Configure",
+                "CMake Build"
+            ],
+            "dependsOrder": "sequence",
+            "detail": "Build the project and run all unit tests"
         }
     ]
 }
