@@ -1,6 +1,6 @@
-#include "input_interpreter.h"
 #include <iostream>
-#include "../input_constants.h"
+#include "app/input_constants.h"
+#include "input_interpreter.h"
 
 void InputInterpreter::interpret(std::string input) const
 {

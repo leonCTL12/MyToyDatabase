@@ -2,7 +2,7 @@
 
 #include <sstream>
 #include <string>
-#include "../key_value_store_internal/key_value_store.h"
+#include "key_value_store_internal/key_value_store.h"
 
 class InputInterpreter
 {

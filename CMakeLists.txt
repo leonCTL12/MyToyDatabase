@@ -5,9 +5,21 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cpp")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/output)
-add_executable(main ${SOURCES})
+include_directories(${CMAKE_SOURCE_DIR}/src)
+
+#key value store library
+file(GLOB_RECURSE KEY_VALUE_STORE_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/key_value_store_internal/*.cpp")
+add_library(kvstore STATIC ${KEY_VALUE_STORE_SOURCES})
+target_include_directories(kvstore PUBLIC ${CMAKE_SOURCE_DIR}/src/key_value_store_internal)
+
+file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS 
+    "${CMAKE_SOURCE_DIR}/src/app/*.cpp"
+    "${CMAKE_SOURCE_DIR}/src/main.cpp"
+)
+add_executable(main ${APP_SOURCES})
+target_link_libraries(main PRIVATE kvstore)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build)
 
 target_compile_options(main PRIVATE -g)
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
