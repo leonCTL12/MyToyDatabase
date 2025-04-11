@@ -14,5 +14,6 @@ private:
     void interpretGetCommand(std::istringstream &stringsStream) const;
     void interpretPutCommand(std::istringstream &command) const;
     void interpretDeleteCommand(std::istringstream &command) const;
+    bool isStringStreamEmpty(std::istringstream &stringsStream) const;
     KeyValueStore &keyValueStore_;
 };

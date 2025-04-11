@@ -30,6 +30,12 @@ void InputInterpreter::interpretGetCommand(std::istringstream &stringsStream) co
     std::string key;
     stringsStream >> key;
 
+    if (!isStringStreamEmpty(stringsStream))
+    {
+        std::cerr << "Extra argument detected. command. Expected format: GET <key>" << std::endl;
+        return;
+    }
+
     auto value = keyValueStore_.get(key);
 
     if (value)
@@ -50,6 +56,12 @@ void InputInterpreter::interpretPutCommand(std::istringstream &stringStream) con
     std::string value;
     stringStream >> value;
 
+    if (!isStringStreamEmpty(stringStream))
+    {
+        std::cerr << "Extra argument detected. command. Expected format: PUT <key> <value>" << std::endl;
+        return;
+    }
+
     keyValueStore_.put(key, value);
     std::cout << "Success" << std::endl;
 }
@@ -59,6 +71,12 @@ void InputInterpreter::interpretDeleteCommand(std::istringstream &stringStream) 
     std::string key;
     stringStream >> key;
 
+    if (!isStringStreamEmpty(stringStream))
+    {
+        std::cerr << "Extra argument detected. command. Expected format: DELETE <key>" << std::endl;
+        return;
+    }
+
     if (keyValueStore_.deleteKey(key))
     {
         std::cout << "Success" << std::endl;
@@ -67,4 +85,9 @@ void InputInterpreter::interpretDeleteCommand(std::istringstream &stringStream) 
     {
         std::cout << "Fail" << std::endl;
     }
+}
+
+bool InputInterpreter::isStringStreamEmpty(std::istringstream &stringsStream) const
+{
+    return stringsStream.eof();
 }
