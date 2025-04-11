@@ -5,7 +5,7 @@
             "name": "Debug MyToyDatabase",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/main",
+            "program": "${workspaceFolder}/output/main",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

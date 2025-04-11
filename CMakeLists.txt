@@ -4,6 +4,14 @@ project(MyToyDatabase LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Delete output folder if it exists and create a fresh one
+file(REMOVE_RECURSE ${CMAKE_SOURCE_DIR}/output)
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/output)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/output)
+# this is for static library
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/output)
+
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
@@ -18,8 +26,6 @@ file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS
 )
 add_executable(main ${APP_SOURCES})
 target_link_libraries(main PRIVATE kvstore)
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build)
 
 target_compile_options(main PRIVATE -g)
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
