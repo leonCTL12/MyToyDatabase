@@ -25,12 +25,5 @@ bool KeyValueStore::deleteKey(const std::string_view key)
 {
     std::lock_guard<std::mutex> lock(mutex);
 
-    auto it = unorderedMap.find(std::string(key));
-    if (it == unorderedMap.end())
-    {
-        return false;
-    }
-
-    unorderedMap.erase(it);
-    return true;
+    return unorderedMap.erase(std::string(key)) > 0;
 }
