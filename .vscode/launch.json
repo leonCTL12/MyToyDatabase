@@ -41,29 +41,7 @@
             ],
             "preLaunchTask": "CMake Build",
             "miDebuggerPath": "/usr/bin/gdb"
-        },
-        {
-            "name": "Debug All Benchmarks",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/output/all_benchmarks",
-            "args": [
-                "--benchmark_filter=BM_Put"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/output",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
-            "preLaunchTask": "CMake Build",
-            "miDebuggerPath": "/usr/bin/gdb"
         }
+        //I do not think adding debugging for benchmark test is necessary, coz benchmark test is not for correctness, it is for performance.
     ]
 }
