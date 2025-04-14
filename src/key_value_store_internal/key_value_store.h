@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <optional>
 #include <string>
+#include <mutex>
 
 class KeyValueStore
 {
@@ -16,4 +17,5 @@ public:
 
 private:
     std::unordered_map<std::string, std::string> unorderedMap;
+    mutable std::mutex mutex; // Mutex for thread safety
 };
