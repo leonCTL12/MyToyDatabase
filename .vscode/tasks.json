@@ -97,5 +97,6 @@
             "dependsOrder": "sequence",
             "detail": "Build the project and run all unit tests"
         }
+        //I do not think adding debugging for benchmark test is necessary, coz benchmark test is not for correctness, it is for performance.
     ]
 }

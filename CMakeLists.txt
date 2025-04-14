@@ -49,3 +49,12 @@ if(BUILD_TESTS)
     # Tell CMake to look for another CMakeLists.txt file in the tests directory
     add_subdirectory(tests) 
 endif()
+
+option(BUILD_BENCHMARKS "Build the benchmarks" ON)
+if(BUILD_BENCHMARKS)
+    # Include the benchmarks subdirectory
+    # Tell CMake to look for another CMakeLists.txt file in the benchmarks directory
+    add_subdirectory(external/benchmark)
+
+    add_subdirectory(bench)
+    endif()
