@@ -8,6 +8,8 @@ static void BM_Put(benchmark::State &state)
     KeyValueStore kv;
     std::string key = "key";
     std::string value = "value";
+    // only the code within the loop body is counted as benchmark time
+    // code outside is treated as set up and is not counted
     for (auto _ : state)
     {
         kv.put(key, value);

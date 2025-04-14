@@ -1,6 +1,5 @@
 # Define the benchmark executable
-# Combine all benchmarks into one executable for easy debugging (like all_tests)
-add_executable(all_benchmarks key_value_store_bench.cpp)
+add_executable(all_benchmarks key_value_store_bench.cpp multithread_key_value_store_bench.cpp)
 
 # Link against kvstore and Google Benchmark
 # benchmark_main provides the main function for Google Benchmark
