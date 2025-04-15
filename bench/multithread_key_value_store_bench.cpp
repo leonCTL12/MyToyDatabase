@@ -39,6 +39,7 @@ public:
 };
 
 //[Lifetime]: Called once per thread per configuration
+// This is the macro to register BM function with the fixture
 BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentGet)(benchmark::State &state)
 {
     std::string key = "key" + std::to_string(state.thread_index());
