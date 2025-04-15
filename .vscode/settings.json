@@ -84,6 +84,10 @@
         "map": "cpp",
         "unordered_set": "cpp",
         "stop_token": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "barrier": "cpp",
+        "cinttypes": "cpp",
+        "regex": "cpp",
+        "latch": "cpp"
     }
 }
