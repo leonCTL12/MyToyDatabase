@@ -5,7 +5,7 @@
             "name": "Debug MyToyDatabase",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/output/main",
+            "program": "${workspaceFolder}/output/debug/main",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -19,16 +19,17 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "CMake Build with Clean"
+            "preLaunchTask": "CMake Build (Debug)",
+            "miDebuggerPath": "/usr/bin/gdb"
         },
         {
             "name": "Debug All Tests",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/output/all_tests",
+            "program": "${workspaceFolder}/output/debug/all_tests",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/output",
+            "cwd": "${workspaceFolder}/output/debug",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -39,9 +40,9 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "CMake Build",
+            "preLaunchTask": "CMake Build (Debug)",
             "miDebuggerPath": "/usr/bin/gdb"
         }
-        //I do not think adding debugging for benchmark test is necessary, coz benchmark test is not for correctness, it is for performance.
+        //No need debug for benchmark, coz benchmark is a performance test, it is release build without debugging symbols
     ]
 }

@@ -3,30 +3,42 @@
     "tasks": [
         {
             "type": "shell",
-            "label": "CMake Configure",
+            "label": "CMake Configure (Debug)",
             "command": "bash",
             "args": [
                 "-c",
-                "mkdir -p ${workspaceFolder}/build && cmake -S ${workspaceFolder} -B ${workspaceFolder}/build -DCMAKE_BUILD_TYPE=Debug"
+                "mkdir -p ${workspaceFolder}/build/debug && cmake -S ${workspaceFolder} -B ${workspaceFolder}/build/debug -DCMAKE_BUILD_TYPE=Debug"
             ],
             "options": {
-                "cwd": "${workspaceFolder}" // Changed from "${workspaceFolder}/build"
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [],
-            "detail": "Ensure build directory exists and configure CMake project"
+            "detail": "Configure CMake project for Debug build"
         },
         {
             "type": "shell",
-            "label": "CMake Build",
+            "label": "CMake Configure (Release)",
+            "command": "bash",
+            "args": [
+                "-c",
+                "mkdir -p ${workspaceFolder}/build/release && cmake -S ${workspaceFolder} -B ${workspaceFolder}/build/release -DCMAKE_BUILD_TYPE=Release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "detail": "Configure CMake project for Release build"
+        },
+        {
+            "type": "shell",
+            "label": "CMake Build (Debug)",
             "command": "cmake",
             "args": [
                 "--build",
-                "${workspaceFolder}/build",
-                "--config",
-                "Debug"
+                "${workspaceFolder}/build/debug"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/build"
+                "cwd": "${workspaceFolder}/build/debug"
             },
             "problemMatcher": [
                 "$gcc"
@@ -35,55 +47,70 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": "CMake Configure",
-            "detail": "Build the project using CMake"
+            "dependsOn": "CMake Configure (Debug)",
+            "detail": "Build the project in Debug mode"
         },
         {
             "type": "shell",
-            "label": "CMake Clean",
-            "command": "rm",
+            "label": "CMake Build (Release)",
+            "command": "cmake",
             "args": [
-                "-rf",
-                "${workspaceFolder}/build"
+                "--build",
+                "${workspaceFolder}/build/release"
             ],
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}/build/release"
             },
-            "problemMatcher": [],
-            "detail": "Clean the build directory"
-        },
-        {
-            "type": "shell",
-            "label": "CMake Build with Clean",
-            "command": "echo",
-            "args": [
-                "Building with clean..."
-            ],
-            "dependsOn": [
-                "CMake Clean",
-                "CMake Configure",
-                "CMake Build"
-            ],
-            "dependsOrder": "sequence",
             "problemMatcher": [
                 "$gcc"
             ],
             "group": {
                 "kind": "build"
             },
-            "detail": "Clean, configure, and build the project"
+            "dependsOn": "CMake Configure (Release)",
+            "detail": "Build the project in Release mode"
         },
         {
             "type": "shell",
-            "label": "CMake Build and Run Tests",
+            "label": "CMake Clean (Debug)",
+            "command": "rm",
+            "args": [
+                "-rf",
+                "${workspaceFolder}/build/debug",
+                "${workspaceFolder}/output/debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "detail": "Clean the Debug build and output directories"
+        },
+        {
+            "type": "shell",
+            "label": "CMake Clean (Release)",
+            "command": "rm",
+            "args": [
+                "-rf",
+                "${workspaceFolder}/build/release",
+                "${workspaceFolder}/output/release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "detail": "Clean the Release build and output directories"
+        },
+        {
+            "type": "shell",
+            "label": "CMake Build and Run Tests (Debug)",
             "command": "ctest",
             "args": [
                 "--test-dir",
-                "${workspaceFolder}/build",
+                "${workspaceFolder}/build/debug",
                 "--output-on-failure"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/build"
+                "cwd": "${workspaceFolder}/build/debug"
             },
             "problemMatcher": [],
             "group": {
@@ -91,33 +118,75 @@
                 "isDefault": true
             },
             "dependsOn": [
-                "CMake Configure",
-                "CMake Build"
+                "CMake Configure (Debug)",
+                "CMake Build (Debug)"
             ],
             "dependsOrder": "sequence",
-            "detail": "Build the project and run all unit tests"
+            "detail": "Build the project in Debug mode and run all unit tests"
         },
         {
             "type": "shell",
-            "label": "CMake Build and Run Benchmarks",
-            "command": "${workspaceFolder}/output/all_benchmarks",
+            "label": "CMake Build and Run Tests (Release)",
+            "command": "ctest",
             "args": [
-                "--benchmark_format=console",
-                "--benchmark_out=${workspaceFolder}/output/benchmark_results.json"
+                "--test-dir",
+                "${workspaceFolder}/build/release",
+                "--output-on-failure"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/build"
+                "cwd": "${workspaceFolder}/build/release"
             },
             "problemMatcher": [],
             "group": {
                 "kind": "test"
             },
             "dependsOn": [
-                "CMake Configure",
-                "CMake Build"
+                "CMake Configure (Release)",
+                "CMake Build (Release)"
             ],
             "dependsOrder": "sequence",
-            "detail": "Build the project and run all benchmarks"
+            "detail": "Build the project in Release mode and run all unit tests"
+        },
+        {
+            "type": "shell",
+            "label": "Run MyToyDatabase (Release)",
+            "command": "${workspaceFolder}/output/release/main",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build"
+            },
+            "dependsOn": [
+                "CMake Configure (Release)",
+                "CMake Build (Release)"
+            ],
+            "dependsOrder": "sequence",
+            "detail": "Build and run the main application in Release mode"
+        },
+        {
+            "type": "shell",
+            "label": "Run Benchmarks (Release)",
+            "command": "${workspaceFolder}/output/release/all_benchmarks",
+            "args": [
+                "--benchmark_format=console",
+                "--benchmark_out=${workspaceFolder}/output/release/benchmark_results.json"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/output/release"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "test"
+            },
+            "dependsOn": [
+                "CMake Configure (Release)",
+                "CMake Build (Release)"
+            ],
+            "dependsOrder": "sequence",
+            "detail": "Build the project in Release mode and run all benchmarks"
         }
     ]
 }
