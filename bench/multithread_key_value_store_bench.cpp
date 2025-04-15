@@ -1,5 +1,5 @@
 #include <benchmark/benchmark.h>
-#include "key_value_store.h"
+#include "key_value_store_internal/key_value_store.h"
 
 //[Lifetime]: Assume ThreadRange (1,4) is used and there is only 1 benchmark function
 //[Lifetime]: Google Benchmark run 3 configurations: 1 thread, 2 threads, 4 threads
@@ -49,4 +49,74 @@ BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentGet)(benchmark::State &sta
     }
 }
 
+BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentPut)(benchmark::State &state)
+{
+    std::string key = "key" + std::to_string(state.thread_index());
+    const std::string value = "value";
+    for (auto _ : state)
+    {
+        kv->put(key, value);
+    }
+}
+
+BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentDeleteKey)(benchmark::State &state)
+{
+    std::string key = "key" + std::to_string(state.thread_index());
+    for (auto _ : state)
+    {
+        kv->deleteKey(key);
+        state.PauseTiming();   // we pause, becuase everything within this loop is benchmarking
+        kv->put(key, "value"); // Re-insert for next iteration
+        state.ResumeTiming();
+    }
+}
+
+BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentPutGet)(benchmark::State &state)
+{
+    std::string key = "key" + std::to_string(state.thread_index());
+    const std::string value = "value";
+    for (auto _ : state)
+    {
+        kv->put(key, value);
+        benchmark::DoNotOptimize(kv->get(key));
+    }
+}
+
+BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentPutOverwrite)(benchmark::State &state)
+{
+    const std::string key = "shared_key";
+    const std::string value = "value";
+    for (auto _ : state)
+    {
+        kv->put(key, value);
+    }
+}
+
+BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentGetAfterDelete)(benchmark::State &state)
+{
+    std::string key = "key" + std::to_string(state.thread_index());
+    // Delete key once before benchmark loop
+    kv->deleteKey(key);
+    for (auto _ : state)
+    {
+        benchmark::DoNotOptimize(kv->get(key));
+    }
+}
+
+BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentPutDelete)(benchmark::State &state)
+{
+    std::string key = "key" + std::to_string(state.thread_index());
+    const std::string value = "value";
+    for (auto _ : state)
+    {
+        kv->put(key, value);
+        kv->deleteKey(key);
+    }
+}
+
+BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPut)->ThreadRange(1, 4)->UseRealTime();
 BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentGet)->ThreadRange(1, 4)->UseRealTime();
+BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentDeleteKey)->ThreadRange(1, 4)->UseRealTime();
+BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPutGet)->ThreadRange(1, 4)->UseRealTime();
+BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPutOverwrite)->ThreadRange(1, 4)->UseRealTime();
+BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPutDelete)->ThreadRange(1, 4)->UseRealTime();

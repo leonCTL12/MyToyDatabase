@@ -18,7 +18,6 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 #key value store library
 file(GLOB_RECURSE KEY_VALUE_STORE_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/key_value_store_internal/*.cpp")
 add_library(kvstore STATIC ${KEY_VALUE_STORE_SOURCES})
-target_include_directories(kvstore PUBLIC ${CMAKE_SOURCE_DIR}/src/key_value_store_internal)
 
 file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS 
     "${CMAKE_SOURCE_DIR}/src/app/*.cpp"

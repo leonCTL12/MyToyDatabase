@@ -1,6 +1,6 @@
 #include <benchmark/benchmark.h>
 #include <string>
-#include "key_value_store.h" //TODO: figure out why this works
+#include "key_value_store_internal/key_value_store.h"
 
 // Benchmark for KeyValueStore::put
 static void BM_Put(benchmark::State &state)
