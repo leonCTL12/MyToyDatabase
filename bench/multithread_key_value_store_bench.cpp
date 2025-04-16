@@ -59,18 +59,6 @@ BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentPut)(benchmark::State &sta
     }
 }
 
-BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentDeleteKey)(benchmark::State &state)
-{
-    std::string key = "key" + std::to_string(state.thread_index());
-    for (auto _ : state)
-    {
-        kv->deleteKey(key);
-        state.PauseTiming();   // we pause, becuase everything within this loop is benchmarking
-        kv->put(key, "value"); // Re-insert for next iteration
-        state.ResumeTiming();
-    }
-}
-
 BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentPutGet)(benchmark::State &state)
 {
     std::string key = "key" + std::to_string(state.thread_index());
@@ -116,7 +104,6 @@ BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentPutDelete)(benchmark::Stat
 
 BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPut)->ThreadRange(1, 4)->UseRealTime();
 BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentGet)->ThreadRange(1, 4)->UseRealTime();
-BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentDeleteKey)->ThreadRange(1, 4)->UseRealTime();
 BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPutGet)->ThreadRange(1, 4)->UseRealTime();
-BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPutOverwrite)->ThreadRange(1, 4)->UseRealTime();
 BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPutDelete)->ThreadRange(1, 4)->UseRealTime();
+BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPutOverwrite)->ThreadRange(1, 4)->UseRealTime();
