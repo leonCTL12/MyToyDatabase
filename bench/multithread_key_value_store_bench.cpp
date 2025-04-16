@@ -38,6 +38,16 @@ public:
     }
 };
 
+BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentPut)(benchmark::State &state)
+{
+    std::string key = "key" + std::to_string(state.thread_index());
+    const std::string value = "value";
+    for (auto _ : state)
+    {
+        kv->put(key, value);
+    }
+}
+
 //[Lifetime]: Called once per thread per configuration
 // This is the macro to register BM function with the fixture
 BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentGet)(benchmark::State &state)
@@ -46,16 +56,6 @@ BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentGet)(benchmark::State &sta
     for (auto _ : state)
     {
         benchmark::DoNotOptimize(kv->get(key));
-    }
-}
-
-BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentPut)(benchmark::State &state)
-{
-    std::string key = "key" + std::to_string(state.thread_index());
-    const std::string value = "value";
-    for (auto _ : state)
-    {
-        kv->put(key, value);
     }
 }
 
@@ -102,8 +102,10 @@ BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentPutDelete)(benchmark::Stat
     }
 }
 
-BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPut)->ThreadRange(1, 4)->UseRealTime();
-BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentGet)->ThreadRange(1, 4)->UseRealTime();
-BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPutGet)->ThreadRange(1, 4)->UseRealTime();
-BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPutDelete)->ThreadRange(1, 4)->UseRealTime();
-BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPutOverwrite)->ThreadRange(1, 4)->UseRealTime();
+// my virtual machine is 8 core
+// it is a good idea to see how it performs with 16 threads
+BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPut)->ThreadRange(1, 16)->UseRealTime();
+BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentGet)->ThreadRange(1, 16)->UseRealTime();
+BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPutGet)->ThreadRange(1, 16)->UseRealTime();
+BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPutDelete)->ThreadRange(1, 16)->UseRealTime();
+BENCHMARK_REGISTER_F(KeyValueStoreFixture, BM_ConcurrentPutOverwrite)->ThreadRange(1, 16)->UseRealTime();
