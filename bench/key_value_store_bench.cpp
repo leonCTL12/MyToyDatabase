@@ -57,6 +57,5 @@ static void BM_PutDelete(benchmark::State &state)
 
 BENCHMARK(BM_Put);
 BENCHMARK(BM_Get);
-BENCHMARK(BM_DeleteKey);
 BENCHMARK(BM_PutGet);
 BENCHMARK(BM_PutDelete);
