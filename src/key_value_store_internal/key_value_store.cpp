@@ -3,19 +3,22 @@
 
 KeyValueStore::KeyValueStore(size_t initial_size)
     // Initialising buckets with n nullptrs
-    : buckets(initial_size, nullptr), numBuckets(initial_size), numElements(0)
+    : buckets(initial_size), numBuckets(initial_size), numElements(0)
 {
+    for (auto &bucket : buckets)
+    {
+        bucket.store(nullptr, std::memory_order_relaxed);
+    }
 }
 
 KeyValueStore::~KeyValueStore()
 {
-    std::lock_guard<std::mutex> lock(mutex);
     for (auto &bucket : buckets)
     {
-        Node *current = bucket;
+        Node *current = bucket.load(std::memory_order_relaxed);
         while (current)
         {
-            Node *next = current->next;
+            Node *next = current->next.load(std::memory_order_relaxed);
             delete current;
             current = next;
         }
@@ -24,40 +27,62 @@ KeyValueStore::~KeyValueStore()
 
 void KeyValueStore::put(const std::string_view key, const std::string_view value)
 {
-    // No need to check if the key already exists
-    //  as we are overwriting the value
-    std::lock_guard<std::mutex> lock(mutex);
-
-    if (static_cast<float>(numElements + 1) / numBuckets > maxLoadFactor)
-    {
-        resize();
-    }
-
     size_t index = hash(key);
-    Node *current = buckets[index];
-    while (current)
-    {
-        if (current->key == key)
-        {
-            current->value = value; // Update the value if the key already exists
-            return;
-        }
-        current = current->next;
-    }
 
-    // Insert at the beginning of the linked list
-    Node *newNode = new Node(std::string(key), std::string(value));
-    newNode->next = buckets[index];
-    buckets[index] = newNode;
-    numElements++;
+    // CAS Retry Loop
+    while (true)
+    {
+        Node *head = buckets[index].load(std::memory_order_acquire);
+        Node *current = head;
+
+        // Traverse list to find key
+        while (current && current->key != key)
+        {
+            current = current->next.load(std::memory_order_acquire);
+        }
+
+        // Key not found, insert at head
+        if (!current)
+        {
+            Node *newNode = new Node(std::string(key), std::string(value));
+            newNode->next.store(head, std::memory_order_relaxed);
+            if (buckets[index].compare_exchange_strong(head, newNode, std::memory_order_release, std::memory_order_acquire))
+            {
+                numElements.fetch_add(1, std::memory_order_relaxed); // Increment the number of elements
+                break;
+            }
+            else
+            {
+                // If CAS fails, we need to delete the new node
+                delete newNode;
+            }
+        }
+        else
+        {
+            // Key found, update value
+            Node *newNode = new Node(std::string(key), std::string(value));
+            newNode->next.store(current->next.load(std::memory_order_acquire), std::memory_order_relaxed);
+            if (buckets[index].compare_exchange_strong(head, newNode, std::memory_order_release, std::memory_order_acquire))
+            {
+                // TODO: fix this
+                //  Not deleting current to avoid use-after-free; memory leak will by handled by the destructor
+                //  delete current;
+                break;
+            }
+            else
+            {
+                // If CAS fails, we need to delete the new node
+                // because it was not inserted into the list
+                delete newNode;
+            }
+        }
+    }
 }
 
 std::optional<std::string> KeyValueStore::get(const std::string_view key) const
 {
-    std::lock_guard<std::mutex> lock(mutex);
-
     size_t index = hash(key);
-    Node *current = buckets[index];
+    Node *current = buckets[index].load(std::memory_order_acquire);
 
     while (current)
     {
@@ -65,73 +90,68 @@ std::optional<std::string> KeyValueStore::get(const std::string_view key) const
         {
             return current->value; // Return the value if the key is found
         }
-        current = current->next;
+        current = current->next.load(std::memory_order_acquire);
     }
     return std::nullopt; // Return nullopt if the key is not found
 }
 
 bool KeyValueStore::deleteKey(const std::string_view key)
 {
-    std::lock_guard<std::mutex> lock(mutex);
-
     size_t index = hash(key);
-    Node *current = buckets[index];
-    Node *prev = nullptr;
 
-    while (current)
+    // CAS Retry Loop
+    while (true)
     {
-        if (current->key == key)
-        {
-            if (prev)
-            {
-                prev->next = current->next; // Bypass the current node
-            }
-            else
-            {
-                buckets[index] = current->next; // Remove the first node in the bucket
-            }
-            delete current;
-            numElements--;
-            return true; // Return true if the key was found and deleted
-        }
-        prev = current;
-        current = current->next;
-    }
+        Node *current = buckets[index].load(std::memory_order_acquire);
+        Node *prev = nullptr;
 
-    return false; // Return false if the key was not found
+        while (current && current->key != key)
+        {
+            prev = current;
+            current = current->next.load(std::memory_order_acquire);
+        }
+
+        if (!current) // Key not found
+        {
+            return false;
+        }
+
+        // Perform actual delete logic
+        Node *next = current->next.load(std::memory_order_acquire);
+        // The node deleted is not the head of the list
+        if (prev)
+        {
+            if (prev->next.compare_exchange_strong(current, next, std::memory_order_release, std::memory_order_acquire))
+            {
+                // TODO: fix this
+                // Not deleting current to avoid use-after-free; memory leak will by handled by the destructor
+                // delete current;
+                numElements.fetch_sub(1, std::memory_order_relaxed); // Approximate count
+                return true;
+            }
+        }
+        else // The node deleted is the head of the list
+        {
+            if (buckets[index].compare_exchange_strong(current, next,
+                                                       std::memory_order_release,
+                                                       std::memory_order_acquire))
+            {
+                // TODO: fix this
+                //  Not deleting current to avoid use-after-free; memory leak will by handled by the destructor
+                //  delete current;
+                numElements.fetch_sub(1, std::memory_order_relaxed); // Approximate count
+                return true;
+            }
+        }
+    }
 }
 
 size_t KeyValueStore::hash(const std::string_view key) const
 {
-    return std::hash<std::string>()(std::string(key)) % numBuckets;
+    return std::hash<std::string_view>()(key) % numBuckets;
 }
 
 void KeyValueStore::resize()
 {
-    size_t newNumBuckets = numBuckets * 2;
-    if (newNumBuckets == 0)
-    {
-        newNumBuckets = 16;
-    }
-    std::vector<Node *> newBuckets(newNumBuckets, nullptr);
-
-    // Rehash all existing keys
-    for (Node *bucket : buckets)
-    {
-        Node *current = bucket;
-        while (current)
-        {
-            Node *next = current->next;
-            size_t newIndex = std::hash<std::string>()(current->key) % newNumBuckets;
-
-            // Insert at the beginning of the new linked list
-            current->next = newBuckets[newIndex];
-            newBuckets[newIndex] = current;
-
-            current = next;
-        }
-    }
-
-    buckets = std::move(newBuckets);
-    numBuckets = newNumBuckets;
+    // TODO: bring back resize later with consistent hashing
 }
