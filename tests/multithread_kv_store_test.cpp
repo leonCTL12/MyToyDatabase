@@ -368,6 +368,102 @@ TEST(KeyValueStoreTest, ConcurrentResizingWithReads)
     }
 }
 
+// Test to catch use-after-free in long-running concurrent put (updates) and get
+TEST(KeyValueStoreTest, ConcurrentPutAndGetUseAfterFree)
+{
+    KeyValueStore kvStore;
+    const int numThreads = 16; // High contention
+    std::vector<std::thread> threads;
+    std::atomic<bool> stop(false);
+
+    // Pre-populate with a single key to ensure updates
+    kvStore.put("key", "initial_value");
+
+    // Launch threads: half perform put (updates), half perform get
+    for (int i = 0; i < numThreads; ++i)
+    {
+        threads.emplace_back([&kvStore, i, &stop]()
+                             {
+            while (!stop) {
+                if (i % 2 == 0) {
+                    // Put: Update the key to trigger delete current
+                    kvStore.put("key", "value_" + std::to_string(i));
+                } else {
+                    // Get: Traverse, potentially accessing freed nodes
+                    kvStore.get("key");
+                    std::this_thread::yield(); // Slow traversal to increase overlap
+                }
+            } });
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    stop = true;
+
+    // Join all threads
+    for (auto &thread : threads)
+    {
+        thread.join();
+    }
+
+    // Verify key existence (optional, to ensure execution)
+    auto value = kvStore.get("key");
+    ASSERT_TRUE(value.has_value()) << "Key 'key' should exist";
+    EXPECT_TRUE(value->find("value_") == 0) << "Unexpected value: " << *value;
+}
+
+// Test to catch use-after-free in concurrent put (updates) and deleteKey
+TEST(KeyValueStoreTest, ConcurrentPutAndDeleteUseAfterFree)
+{
+    KeyValueStore kvStore;
+    const int numThreads = 20;
+    const int opsPerThread = 1000;
+    std::vector<std::thread> threads;
+
+    // Pre-populate with a small set of keys to ensure updates
+    for (int i = 0; i < 10; ++i)
+    {
+        kvStore.put("key" + std::to_string(i), "initial_value");
+    }
+
+    // Launch threads: half perform put (updates), half perform deleteKey
+    for (int i = 0; i < numThreads; ++i)
+    {
+        threads.emplace_back([&kvStore, i, opsPerThread]()
+                             {
+            for (int j = 0; j < opsPerThread; ++j) {
+                // Use a small key set to target the same buckets
+                std::string key = "key" + std::to_string(j % 10);
+                if (i % 2 == 0) {
+                    // Put: Update or insert to trigger delete current
+                    kvStore.put(key, "value_" + std::to_string(j));
+                } else {
+                    // Delete: Remove keys, triggering delete current
+                    kvStore.deleteKey(key);
+                    // Re-insert to keep the key set active
+                    kvStore.put(key, "reinsert_" + std::to_string(j));
+                }
+            } });
+    }
+
+    // Join all threads
+    for (auto &thread : threads)
+    {
+        thread.join();
+    }
+
+    // Verify some keys (optional, as deletion may remove some)
+    for (int i = 0; i < 10; ++i)
+    {
+        auto value = kvStore.get("key" + std::to_string(i));
+        if (value.has_value())
+        {
+            // Values may be from put or reinsert
+            EXPECT_TRUE(value->find("value_") == 0 || value->find("reinsert_") == 0)
+                << "Unexpected value for key" << i;
+        }
+    }
+}
+
 TEST(KeyValueStoreTest, LongRunningStress)
 {
     KeyValueStore kvStore;
@@ -393,4 +489,16 @@ TEST(KeyValueStoreTest, LongRunningStress)
     {
         thread.join();
     }
+}
+
+TEST(KeyValueStoreTest, DestructorAfterOperations)
+{
+    KeyValueStore *kvStore = new KeyValueStore();
+    kvStore->put("key", "value");
+    std::thread t([&]()
+                  {
+                      auto val = kvStore->get("key"); // Access during destruction
+                  });
+    delete kvStore; // Destructor runs
+    t.join();       // May crash if not thread-safe
 }
