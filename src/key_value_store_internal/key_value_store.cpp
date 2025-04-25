@@ -65,8 +65,7 @@ void KeyValueStore::put(const std::string_view key, const std::string_view value
             if (buckets[index].compare_exchange_strong(head, newNode, std::memory_order_release, std::memory_order_acquire))
             {
                 // TODO: fix this
-                //  Not deleting current to avoid use-after-free; memory leak will by handled by the destructor
-                //  delete current;
+                delete current;
                 break;
             }
             else
@@ -124,8 +123,7 @@ bool KeyValueStore::deleteKey(const std::string_view key)
             if (prev->next.compare_exchange_strong(current, next, std::memory_order_release, std::memory_order_acquire))
             {
                 // TODO: fix this
-                // Not deleting current to avoid use-after-free; memory leak will by handled by the destructor
-                // delete current;
+                delete current;
                 numElements.fetch_sub(1, std::memory_order_relaxed); // Approximate count
                 return true;
             }
@@ -137,8 +135,7 @@ bool KeyValueStore::deleteKey(const std::string_view key)
                                                        std::memory_order_acquire))
             {
                 // TODO: fix this
-                //  Not deleting current to avoid use-after-free; memory leak will by handled by the destructor
-                //  delete current;
+                delete current;
                 numElements.fetch_sub(1, std::memory_order_relaxed); // Approximate count
                 return true;
             }
