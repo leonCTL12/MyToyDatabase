@@ -23,7 +23,20 @@ private:
         std::string key;
         std::string value;
         std::atomic<Node *> next;
+        std::atomic<int> refCount = 1;
         Node(const std::string &k, const std::string &v) : key(k), value(v), next(nullptr) {}
+        void release()
+        {
+            if (refCount.fetch_sub(1, std::memory_order_release) == 1)
+            {
+                delete this;
+            }
+        }
+
+        void retain()
+        {
+            refCount.fetch_add(1, std::memory_order_acquire);
+        }
     };
 
     std::vector<std::atomic<Node *>> buckets;
