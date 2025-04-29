@@ -1,8 +1,70 @@
 #include "key_value_store.h"
-#include <iostream>
+#include <thread>
+#include <algorithm>
+#include <stdexcept>
+#include <iostream> // For debugging (optional)
+
+// Thread-local storage
+thread_local HazardPointer *localHazardPointers = nullptr;
+thread_local std::vector<Node *> retiredNodes;
+thread_local bool isRegistered = false;
+
+std::atomic<HazardPointer *> globalHazardPointers[MAX_THREADS] = {};
+std::mutex globalHazardPointersMutex;
+
+HazardPointer *KeyValueStore::HazardPointerManager::getHazardPointers()
+{
+    if (!localHazardPointers)
+    {
+        localHazardPointers = new HazardPointer();
+        if (!isRegistered)
+        {
+            registerThread();
+            isRegistered = true;
+        }
+    }
+    return localHazardPointers;
+}
+
+void KeyValueStore::HazardPointerManager::registerThread()
+{
+    static std::atomic<int> registrationCount{0};
+    std::lock_guard<std::mutex> lock(globalHazardPointersMutex);
+    for (int i = 0; i < MAX_THREADS; ++i)
+    {
+        if (globalHazardPointers[i].load(std::memory_order_relaxed) == nullptr)
+        {
+            globalHazardPointers[i].store(localHazardPointers, std::memory_order_release);
+            int count = registrationCount.fetch_add(1, std::memory_order_relaxed) + 1;
+            return;
+        }
+    }
+    int count = registrationCount.load(std::memory_order_relaxed);
+    throw std::runtime_error("Too many threads, attempted: " + std::to_string(count + 1) +
+                             ", max: " + std::to_string(MAX_THREADS));
+}
+
+void KeyValueStore::HazardPointerManager::unregisterThread()
+{
+    std::lock_guard<std::mutex> lock(globalHazardPointersMutex);
+    for (int i = 0; i < MAX_THREADS; ++i)
+    {
+        if (globalHazardPointers[i].load(std::memory_order_relaxed) == localHazardPointers)
+        {
+            globalHazardPointers[i].store(nullptr, std::memory_order_release);
+            delete localHazardPointers;
+            localHazardPointers = nullptr;
+            return;
+        }
+    }
+}
+
+std::atomic<HazardPointer *> *KeyValueStore::HazardPointerManager::getGlobalHazardPointers()
+{
+    return globalHazardPointers;
+}
 
 KeyValueStore::KeyValueStore(size_t initial_size)
-    // Initialising buckets with n nullptrs
     : buckets(initial_size), numBuckets(initial_size), numElements(0)
 {
     for (auto &bucket : buckets)
@@ -19,7 +81,7 @@ KeyValueStore::~KeyValueStore()
         while (current)
         {
             Node *next = current->next.load(std::memory_order_acquire);
-            current->release(); // Decrement ref count
+            delete current;
             current = next;
         }
     }
@@ -28,196 +90,283 @@ KeyValueStore::~KeyValueStore()
 void KeyValueStore::put(const std::string_view key, const std::string_view value)
 {
     size_t index = hash(key);
+    HazardPointer *hp = HazardPointerManager::getHazardPointers();
 
-    // CAS Retry Loop
     while (true)
     {
         Node *head = buckets[index].load(std::memory_order_acquire);
+        hp->setHazardPointer(0, head);
+
         if (!head)
         {
             Node *newNode = new Node(std::string(key), std::string(value));
             if (buckets[index].compare_exchange_strong(head, newNode, std::memory_order_release))
             {
-                numElements.fetch_add(1, std::memory_order_relaxed); // Increment the number of elements
+                numElements.fetch_add(1, std::memory_order_relaxed);
+                hp->clearHazardPointer(0);
+                if (retiredNodes.size() >= RECLAIM_THRESHOLD)
+                {
+                    reclaimRetiredNodes();
+                }
                 return;
             }
-            delete newNode; // If CAS fails, we need to delete the new node
-            continue;       // Retry
+            delete newNode;
+            hp->clearHazardPointer(0);
+            continue;
         }
 
-        head->retain();
         Node *current = head;
         Node *prev = nullptr;
+        hp->setHazardPointer(1, current);
 
-        // Traverse list to find key
         while (current && current->key != key)
         {
             prev = current;
-            current = current->next.load(std::memory_order_acquire);
-            if (current)
-            {
-                current->retain(); // Increment ref count for next node
-            }
-            prev->release(); // Decrement ref count for previous node
+            Node *next = current->next.load(std::memory_order_acquire);
+            hp->setHazardPointer(0, next);
+            hp->clearHazardPointer(1);
+            current = next;
+            hp->setHazardPointer(1, current);
         }
 
-        Node *newNode = new Node(std::string(key), std::string(value));
-
-        // Key not found, insert at head
-        if (!current)
+        if (current)
         {
-            newNode->next.store(head, std::memory_order_relaxed);
-            if (buckets[index].compare_exchange_strong(head, newNode, std::memory_order_release, std::memory_order_acquire))
-            {
-                numElements.fetch_add(1, std::memory_order_relaxed); // Increment the number of elements
-                if (prev)
-                {
-                    prev->release();
-                }
-                return;
-            }
-            // If CAS fails, we need to delete the new node
-            delete newNode;
-            if (prev)
-            {
-                prev->release(); // Decrement ref count for previous node
-            }
-            continue; // Retry
-        }
-        else
-        {
-            // Key found, update value
+            Node *newNode = new Node(std::string(key), std::string(value));
             newNode->next.store(current->next.load(std::memory_order_acquire), std::memory_order_relaxed);
+            bool success = false;
             if (prev)
             {
-                if (prev->next.compare_exchange_strong(current, newNode, std::memory_order_release, std::memory_order_acquire))
+                if (prev->next.compare_exchange_strong(current, newNode, std::memory_order_release))
                 {
-                    current->release(); // Decrement ref count for current node
-                    prev->release();    // Decrement ref count for previous node
-                    return;
+                    success = true;
                 }
-                delete newNode;     // If CAS fails, we need to delete the new node
-                current->release(); // Decrement ref count for current node
-                prev->release();    // Decrement ref count for previous node
             }
             else
             {
                 if (buckets[index].compare_exchange_strong(current, newNode, std::memory_order_release))
                 {
-                    head->release(); // Decrement ref count for current node
-                    return;
+                    success = true;
                 }
-                delete newNode;  // If CAS fails, we need to delete the new node
-                head->release(); // Decrement ref count for current node
             }
+            if (success)
+            {
+                retireNode(current);
+                hp->clearHazardPointer(0);
+                hp->clearHazardPointer(1);
+                if (retiredNodes.size() >= RECLAIM_THRESHOLD)
+                {
+                    reclaimRetiredNodes();
+                }
+                return;
+            }
+            delete newNode;
+            hp->clearHazardPointer(0);
+            hp->clearHazardPointer(1);
             continue;
         }
+
+        Node *newNode = new Node(std::string(key), std::string(value));
+        newNode->next.store(head, std::memory_order_relaxed);
+        if (buckets[index].compare_exchange_strong(head, newNode, std::memory_order_release))
+        {
+            numElements.fetch_add(1, std::memory_order_relaxed);
+            hp->clearHazardPointer(0);
+            hp->clearHazardPointer(1);
+            if (retiredNodes.size() >= RECLAIM_THRESHOLD)
+            {
+                reclaimRetiredNodes();
+            }
+            return;
+        }
+        delete newNode;
+        hp->clearHazardPointer(0);
+        hp->clearHazardPointer(1);
+        continue;
     }
 }
 
 std::optional<std::string> KeyValueStore::get(const std::string_view key) const
 {
     size_t index = hash(key);
-    Node *current = buckets[index].load(std::memory_order_acquire);
+    HazardPointer *hp = HazardPointerManager::getHazardPointers();
 
-    if (current)
+    while (true)
     {
-        current->retain(); // Increment ref count
-    }
+        // Step 1: Load and protect head
+        Node *head = buckets[index].load(std::memory_order_acquire);
+        if (!head)
+        {
+            return std::nullopt;
+        }
+        hp->setHazardPointer(0, head);
+        // Verify head is still valid
+        if (buckets[index].load(std::memory_order_acquire) != head)
+        {
+            hp->clearHazardPointer(0);
+            continue; // Head changed, retry
+        }
 
-    while (current)
-    {
-        if (current->key == key)
+        Node *current = head;
+        Node *prev = nullptr;
+
+        while (current)
         {
-            std::string value = current->value; // Copy the value
-            current->release();
-            return value; // Return the value if the key is found
+            // Step 2: Protect current
+            hp->setHazardPointer(1, current);
+
+            // Step 3: Load next while current is protected
+            Node *next = current->next.load(std::memory_order_acquire);
+
+            // Step 4: Immediately protect next before any access
+            hp->setHazardPointer(0, next);
+
+            // Step 5: Validate that current is still linked
+            if (prev && prev->next.load(std::memory_order_acquire) != current)
+            {
+                hp->clearHazardPointer(0);
+                hp->clearHazardPointer(1);
+                break; // Current was unlinked, retry
+            }
+
+            // Step 6: Check key match
+            if (current->key == key)
+            {
+                std::string value = current->value;
+                hp->clearHazardPointer(0);
+                hp->clearHazardPointer(1);
+                return value;
+            }
+
+            // Step 7: Advance to next
+            prev = current;
+            current = next;
+
+            // Clear hazard pointer 1 only after next is protected
+            hp->clearHazardPointer(1);
         }
-        Node *next = current->next.load(std::memory_order_acquire);
-        // TODO: figure out what if next is released here, before we even call retain();
-        if (next)
+
+        // Clear remaining hazard pointer
+        hp->clearHazardPointer(0);
+
+        // If we broke due to unlinking, retry
+        if (current)
         {
-            next->retain(); // Increment ref count for next node
+            continue;
         }
-        current->release(); // Decrement ref count for current node
-        current = next;     // Move to the next node
+        return std::nullopt;
     }
-    return std::nullopt; // Return nullopt if the key is not found
 }
 
 bool KeyValueStore::deleteKey(const std::string_view key)
 {
     size_t index = hash(key);
+    HazardPointer *hp = HazardPointerManager::getHazardPointers();
 
-    // CAS Retry Loop
     while (true)
     {
         Node *head = buckets[index].load(std::memory_order_acquire);
+        hp->setHazardPointer(0, head);
+
         if (!head)
         {
-            return false; // Key not found
+            hp->clearHazardPointer(0);
+            return false;
         }
-        head->retain();
+
         Node *current = head;
         Node *prev = nullptr;
 
         while (current && current->key != key)
         {
             prev = current;
-            current = current->next.load(std::memory_order_acquire);
-            if (current)
-            {
-                current->retain(); // Increment ref count for next node
-            }
-            prev->release(); // Decrement ref count for previous node
+            Node *next = current->next.load(std::memory_order_acquire);
+            hp->setHazardPointer(1, next);
+            current = next;
         }
 
-        if (!current) // Key not found
+        if (!current)
         {
-            if (prev)
-            {
-                prev->release(); // Decrement ref count for previous node
-            }
+            hp->clearHazardPointer(0);
+            hp->clearHazardPointer(1);
             return false;
         }
 
-        // Perform actual delete logic
         Node *next = current->next.load(std::memory_order_acquire);
-        // The node deleted is not the head of the list
+        bool success = false;
         if (prev)
         {
-            if (prev->next.compare_exchange_strong(current, next, std::memory_order_release, std::memory_order_acquire))
+            if (prev->next.compare_exchange_strong(current, next, std::memory_order_release))
             {
-                current->release();
-                prev->release();
-                numElements.fetch_sub(1, std::memory_order_relaxed); // Approximate count
-                return true;
+                success = true;
             }
-            current->release();
-            prev->release();
         }
-        else // The node deleted is the head of the list
+        else
         {
-            if (buckets[index].compare_exchange_strong(current, next,
-                                                       std::memory_order_release,
-                                                       std::memory_order_acquire))
+            if (buckets[index].compare_exchange_strong(current, next, std::memory_order_release))
             {
-                head->release();                                     // Decrement ref count for current node
-                numElements.fetch_sub(1, std::memory_order_relaxed); // Approximate count
-                return true;
+                success = true;
             }
-            head->release(); // Decrement ref count for current node
         }
+        if (success)
+        {
+            retireNode(current);
+            numElements.fetch_sub(1, std::memory_order_relaxed);
+            hp->clearHazardPointer(0);
+            hp->clearHazardPointer(1);
+            if (retiredNodes.size() >= RECLAIM_THRESHOLD)
+            {
+                reclaimRetiredNodes();
+            }
+            return true;
+        }
+        hp->clearHazardPointer(0);
+        hp->clearHazardPointer(1);
         continue;
+    }
+}
+
+void KeyValueStore::retireNode(Node *node) const
+{
+    retiredNodes.push_back(node);
+}
+
+void KeyValueStore::reclaimRetiredNodes() const
+{
+    std::vector<Node *> toDelete;
+    for (auto node : retiredNodes)
+    {
+        bool safe = true;
+        auto *globalHPs = HazardPointerManager::getGlobalHazardPointers();
+        for (int i = 0; i < MAX_THREADS; ++i)
+        {
+            auto *hp = globalHPs[i].load(std::memory_order_acquire);
+            if (hp)
+            {
+                for (int j = 0; j < MAX_HAZARD_POINTERS; ++j)
+                {
+                    if (hp->getHazardPointer(j) == node)
+                    {
+                        safe = false;
+                        break;
+                    }
+                }
+            }
+            if (!safe)
+                break;
+        }
+        if (safe)
+        {
+            toDelete.push_back(node);
+        }
+    }
+    for (auto node : toDelete)
+    {
+        delete node;
+        retiredNodes.erase(std::remove(retiredNodes.begin(), retiredNodes.end(), node), retiredNodes.end());
     }
 }
 
 size_t KeyValueStore::hash(const std::string_view key) const
 {
-    return std::hash<std::string_view>()(key) % numBuckets;
-}
-
-void KeyValueStore::resize()
-{
-    // TODO: bring back resize later with consistent hashing
+    return std::hash<std::string_view>{}(key) % numBuckets;
 }

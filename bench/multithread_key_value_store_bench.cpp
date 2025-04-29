@@ -36,6 +36,12 @@ public:
             }
         }
     }
+
+    void TearDown(const benchmark::State &state) override
+    {
+        // Unregister the current thread's hazard pointers
+        KeyValueStore::HazardPointerManager::unregisterThread();
+    }
 };
 
 BENCHMARK_DEFINE_F(KeyValueStoreFixture, BM_ConcurrentPut)(benchmark::State &state)
